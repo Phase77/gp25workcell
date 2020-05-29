@@ -1,0 +1,14 @@
+<launch>
+
+  <!-- By default, we are not in debug mode -->
+  <arg name="debug" default="false" />
+
+  <!-- GDB Debug Option -->
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix"
+     value="gdb -x $(find motoman_gp25_moveit_config)/launch/gdb_settings.gdb --ex run --args" />
+
+  <node name="move_node" pkg="gp25workcell" type="move_node" respawn="false" output="screen">
+  </node>
+
+</launch>

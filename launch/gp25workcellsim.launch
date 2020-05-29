@@ -1,0 +1,18 @@
+<launch>
+
+  <!-- By default, we are not in debug mode -->
+  <arg name="debug" default="false" />
+
+  <!-- GDB Debug Option -->
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix"
+     value="gdb -x $(find motoman_gp25_moveit_config)/launch/gdb_settings.gdb --ex run --args" />
+
+  <include file="$(find motoman_gp25_moveit_config)/launch/demo.launch"/>
+
+  <node name="tcp_node" pkg="gp25workcell" type="tcp_node" output="screen" args="192.168.0.100 test 5000" />
+  <node name="TcpProcess_node" pkg="gp25workcell" type="TcpProcess_node" output="screen" />
+  <node name="move_node" pkg="gp25workcell" type="move_node" respawn="false" output="screen">
+  </node>
+
+</launch>
