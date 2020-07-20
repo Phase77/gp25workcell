@@ -20,14 +20,23 @@
 #include "geometric_shapes/shape_operations.h"
 #include <geometric_shapes/shape_operations.h>
 
-int count = 0;
-char message[20];
+int Mcount = 0;
+int Ccount = 0;
+char Mmessage[20];
+char Cmessage[20];
 
 void MCommandMsgCallback(const std_msgs::String::ConstPtr& MCommandmsg)
 {
-    MCommandmsg->data.copy(message,10,0);
-    count++;
+    MCommandmsg->data.copy(Mmessage,10,0);
+    Mcount++;
     ROS_INFO("move_node: I heard: %s", MCommandmsg->data.c_str());
+}
+
+void CCommandMsgCallback(const std_msgs::String::ConstPtr& CCommandmsg)
+{
+    CCommandmsg->data.copy(Cmessage,10,0);
+    Ccount++;
+    ROS_INFO("move_node: I heard: %s", CCommandmsg->data.c_str());
 }
 
 
@@ -42,6 +51,7 @@ int main(int argc, char* argv[])
   
   // subscribe to MasterMsg topic
   ros::Subscriber sub = node_handle.subscribe("MCommandMsg", 1000, MCommandMsgCallback);
+  ros::Subscriber subC = node_handle.subscribe("CCommandMsg", 1000, CCommandMsgCallback);
 
   // BEGIN_TUTORIAL
   //
@@ -94,7 +104,7 @@ int main(int argc, char* argv[])
   moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
   //
   //Vector to scale 3D file units
-  Eigen::Vector3d vectorScale(0.00254, 0.00254, 0.00254);
+  Eigen::Vector3d vectorScale(0.001, 0.001, 0.001);
 
   // Define collision objects ROS message.
   moveit_msgs::CollisionObject collision_object;
@@ -104,25 +114,29 @@ int main(int argc, char* argv[])
 
   // The id of the object is used to identify it.
   collision_object.id = "box1";
-  // GoForm.id = "GoForm";
+  GoForm.id = "GoForm";
 
-  // shapes::Mesh* m = shapes::createMeshFromResource("package://gp25workcell/GxSmall.stl", vectorScale);//,);
+  shapes::Mesh* m = shapes::createMeshFromResource("package://gp25workcell/GxSmall.stl", vectorScale);//,);
 
-  // shape_msgs::Mesh mesh;
-  // shapes::ShapeMsg mesh_msg;
-  // shapes::constructMsgFromShape(m, mesh_msg);
-  // mesh = boost::get<shape_msgs::Mesh>(mesh_msg);
+  shape_msgs::Mesh mesh;
+  shapes::ShapeMsg mesh_msg;
+  shapes::constructMsgFromShape(m, mesh_msg);
+  mesh = boost::get<shape_msgs::Mesh>(mesh_msg);
 
   //define pose of mesh
   geometry_msgs::Pose obj_pose;
-  obj_pose.position.x = 1.0;
+  obj_pose.position.x = 0.0;
   obj_pose.position.y = 1.0;
-  obj_pose.position.z = 0.0;
+  obj_pose.position.z = 1.0;
+  obj_pose.orientation.w = sqrt(0.5);
+  obj_pose.orientation.x = 0.0;
+  obj_pose.orientation.y = 0.0;
+  obj_pose.orientation.z = -sqrt(0.5);
 
   //Add mesh to collision object message
-  // GoForm.meshes.push_back(mesh);
-  // GoForm.mesh_poses.push_back(obj_pose);
-  // GoForm.operation = GoForm.ADD;
+  GoForm.meshes.push_back(mesh);
+  GoForm.mesh_poses.push_back(obj_pose);
+  GoForm.operation = GoForm.ADD;
 
   // Define a box to add to the world.
   shape_msgs::SolidPrimitive primitive;
@@ -134,14 +148,14 @@ int main(int argc, char* argv[])
 
   // Define a pose for the box (specified relative to frame_id)
   geometry_msgs::Pose box_pose;
-  box_pose.orientation.w = 1.0;
+  box_pose.orientation.w = 0;
   box_pose.position.x = 0.9;
   box_pose.position.y = -0.2;
   box_pose.position.z = 1.0;
 
-  // collision_object.primitives.push_back(primitive);
-  // collision_object.primitive_poses.push_back(box_pose);
-  // collision_object.operation = collision_object.ADD;
+  collision_object.primitives.push_back(primitive);
+  collision_object.primitive_poses.push_back(box_pose);
+  collision_object.operation = collision_object.ADD;
 
   // std::vector<moveit_msgs::CollisionObject> collision_objects;
   // collision_objects.push_back(collision_object);
@@ -185,11 +199,11 @@ int main(int argc, char* argv[])
 
   while(ros::ok())
   {
-    if(count >= 1)
+    if(Mcount >= 1)
     {
-      if(message[0] = 'M')
+      if(Mmessage[0] = 'M')    //Move
       {
-        switch(message[1])
+        switch(Mmessage[1])
         {
           case '1':
             //if recieved M1
@@ -197,12 +211,12 @@ int main(int argc, char* argv[])
             move_group.setPoseTarget(target_pose_M1);
             break;
           case '2':
-            //if recieved M1
+            //if recieved M2
             ROS_INFO("move_node: Move to M2");
             move_group.setPoseTarget(target_pose_M2);
             break; 
           case '3':
-            //if recieved M1
+            //if recieved M3
             ROS_INFO("move_node: Move to M3");
             move_group.setPoseTarget(target_pose_M3);
             break; 
@@ -212,8 +226,33 @@ int main(int argc, char* argv[])
         bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);    
         move_group.move();
       }
-      count--;
+      Mcount--;
     }
+
+    if(Ccount >= 1)    //Configure
+      {
+        switch(Cmessage[1])
+        {
+          case '1':
+            //configure point 1
+            ROS_INFO("move_node: Config point 1");
+            target_pose_M1.orientation.w = 0.5;
+            target_pose_M1.orientation.x = 1.0;
+            target_pose_M1.orientation.y = 1.0;
+            target_pose_M1.orientation.z = 1.0;
+            target_pose_M1.position.x = 1.0;
+            target_pose_M1.position.y = 0.3;
+            target_pose_M1.position.z = 1.5;
+            break;
+          case '2':
+            //configure point 2
+            break;
+          case '3':
+            //configure point 3
+            break;
+        }
+      Ccount--;
+      }
     ros::spinOnce();
   }
 

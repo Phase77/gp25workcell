@@ -40,6 +40,12 @@ int main(int argc, char* argv[])
     //create message object to put data in and forward on MCommand topic
     std_msgs::String MCommandmsg;
 
+    //Message to publish C commands on
+    ros::Publisher CCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("CCommandMsg", 1000);
+    
+    //create message object to put data in and forward on CCommand topic
+    std_msgs::String CCommandmsg;
+
     while(ros::ok())
     {
         if(count >= 1)
@@ -75,6 +81,20 @@ int main(int argc, char* argv[])
                     break;
                 case 'R':
                     ROS_INFO("TcpProcess_node: I got a Report command");
+                    break;
+                case 'C':
+                    ROS_INFO("TcpProcess_node: I got a Config command");
+                    switch(message[1])
+                    {
+                        case '1':           //configure point 1
+                            CCommandmsg.data = message;
+                            break;
+                        case '2':           //configure point 2
+                            break;
+                        case '3':           //configure point 3
+                            break;
+                    }
+                    CCommandMsg_pub.publish(CCommandmsg);
                     break;
                 default:
                     ROS_INFO("TcpProcess_node: ???????"); 
