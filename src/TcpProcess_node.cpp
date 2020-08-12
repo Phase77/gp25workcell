@@ -1,22 +1,15 @@
 /**
  * Simple ROS Node
  **/
-#include <ros/ros.h>
-#include "std_msgs/String.h"
-#include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
+#include "headers.h"
+
 
 int count = 0;
-char message[20];
+char message[88];
 
 void MasterMsgCallback(const std_msgs::String::ConstPtr& msg)
 {
-    msg->data.copy(message,10,0);
+    msg->data.copy(message,44,0);
     count++;
     ROS_INFO("I heard: %s", msg->data.c_str());
 }
@@ -33,6 +26,9 @@ int main(int argc, char* argv[])
 
     //subscribe to MasterMsg topic
     ros::Subscriber sub = nh_TcpProcess.subscribe("MasterMsg", 1000, MasterMsgCallback);
+
+    //subscribe to joint_states topic
+    // ros::Subscriber jointSub = nh_TcpProcess.subscribe("joint_states", 1000, JointStateCallback);
     
     //Message to publish M commands on
     ros::Publisher MCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("MCommandMsg", 1000);
@@ -41,10 +37,20 @@ int main(int argc, char* argv[])
     std_msgs::String MCommandmsg;
 
     //Message to publish C commands on
-    ros::Publisher CCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("CCommandMsg", 1000);
+    ros::Publisher CCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("CCommandMsg", 10000);
     
     //create message object to put data in and forward on CCommand topic
     std_msgs::String CCommandmsg;
+
+    //Message to publish R commands on
+    ros::Publisher RCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("RCommandMsg", 10000);
+    
+    //create message object to put data in and forward on RCommand topic
+    std_msgs::String RCommandmsg;
+
+    // // The :move_group_interface:`MoveGroup` class can be easily
+    // // setup using just the name of the planning group you would like to control and plan for.
+    // moveit::planning_interface::MoveGroupInterface move_group("manipulator");
 
     while(ros::ok())
     {
@@ -80,20 +86,31 @@ int main(int argc, char* argv[])
                     MCommandMsg_pub.publish(MCommandmsg);                    
                     break;
                 case 'R':
-                    ROS_INFO("TcpProcess_node: I got a Report command");
+                    ROS_INFO("TcpProcess_node: I got a Report Command");
+                    switch(message[1])
+                    {
+                        case '1':
+                            ROS_INFO("TcpProcess_node: Report R1");
+                            RCommandmsg.data = "R1";
+                            break;
+                        case '2':
+                            ROS_INFO("TcpProcess_node: Report R2");
+                            RCommandmsg.data = "R2";
+                            break;
+                        case '3':
+                            ROS_INFO("TcpProcess_node: Report R3");
+                            RCommandmsg.data = "R3";
+                            break;
+                        default:
+                            ROS_INFO("TcpProcess_node: Unknown report command");
+                            RCommandmsg.data = "Unknown Report Command";
+                            break;
+                    }
+                    RCommandMsg_pub.publish(RCommandmsg);
                     break;
                 case 'C':
                     ROS_INFO("TcpProcess_node: I got a Config command");
-                    switch(message[1])
-                    {
-                        case '1':           //configure point 1
-                            CCommandmsg.data = message;
-                            break;
-                        case '2':           //configure point 2
-                            break;
-                        case '3':           //configure point 3
-                            break;
-                    }
+                    CCommandmsg.data = message;
                     CCommandMsg_pub.publish(CCommandmsg);
                     break;
                 default:

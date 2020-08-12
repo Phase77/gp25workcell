@@ -169,6 +169,7 @@ include_directories(
  add_executable(move_node src/move_node.cpp)
  add_executable(tcp_node src/tcp_node.cpp)
  add_executable(TcpProcess_node src/TcpProcess_node.cpp)
+ #add_executable(config_node src/config_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -184,6 +185,7 @@ include_directories(
  target_link_libraries(move_node ${catkin_LIBRARIES})
  target_link_libraries(tcp_node ${catkin_LIBRARIES})
  target_link_libraries(TcpProcess_node ${catkin_LIBRARIES})
+ #target_link_libraries(config_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##

@@ -1,18 +1,15 @@
 /**
 **  Simple ROS Node
 **/
-#include <ros/ros.h>
-#include "std_msgs/String.h"
+#include "headers.h"
+
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
-
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
-
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
-
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
 #include "geometric_shapes/shapes.h"
@@ -20,10 +17,18 @@
 #include "geometric_shapes/shape_operations.h"
 #include <geometric_shapes/shape_operations.h>
 
+using namespace std;
+
+  //position values
+  geometry_msgs::Pose target_pose_M1;
+  geometry_msgs::Pose target_pose_M2;
+  geometry_msgs::Pose target_pose_M3;
+
 int Mcount = 0;
-int Ccount = 0;
+int Rcount = 0;
 char Mmessage[20];
-char Cmessage[20];
+char Rmessage[20];
+std::string PLANNING_GROUP = "manipulator";
 
 void MCommandMsgCallback(const std_msgs::String::ConstPtr& MCommandmsg)
 {
@@ -32,13 +37,12 @@ void MCommandMsgCallback(const std_msgs::String::ConstPtr& MCommandmsg)
     ROS_INFO("move_node: I heard: %s", MCommandmsg->data.c_str());
 }
 
-void CCommandMsgCallback(const std_msgs::String::ConstPtr& CCommandmsg)
+void RCommandMsgCallback(const std_msgs::String::ConstPtr& RCommandmsg)
 {
-    CCommandmsg->data.copy(Cmessage,10,0);
-    Ccount++;
-    ROS_INFO("move_node: I heard: %s", CCommandmsg->data.c_str());
+    RCommandmsg->data.copy(Rmessage,10,0);
+    Rcount++;
+    ROS_INFO("move_node: I heard: %s", RCommandmsg->data.c_str());
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -49,20 +53,18 @@ int main(int argc, char* argv[])
 
   ROS_INFO("Hello, World!");
   
+  // Create a ROS node handle
+  ros::NodeHandle nh_moveNode;
+  
   // subscribe to MasterMsg topic
   ros::Subscriber sub = node_handle.subscribe("MCommandMsg", 1000, MCommandMsgCallback);
-  ros::Subscriber subC = node_handle.subscribe("CCommandMsg", 1000, CCommandMsgCallback);
-
-  // BEGIN_TUTORIAL
-  //
-  // Setup
-  // ^^^^^
-  //
+  ros::Subscriber Rsub = node_handle.subscribe("RCommandMsg", 1000, RCommandMsgCallback);
+ 
   // MoveIt! operates on sets of joints called "planning groups" and stores them in an object called
   // the `JointModelGroup`. Throughout MoveIt! the terms "planning group" and "joint model group"
   // are used interchangably.
  
-  static const std::string PLANNING_GROUP = "manipulator";
+ 
 
   // The :move_group_interface:`MoveGroup` class can be easily
   // setup using just the name of the planning group you would like to control and plan for.
@@ -76,6 +78,9 @@ int main(int argc, char* argv[])
   const robot_state::JointModelGroup* joint_model_group =
       move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
 
+      
+      
+  
   // Getting Basic Information
   // ^^^^^^^^^^^^^^^^^^^^^^^^^
   //
@@ -102,6 +107,7 @@ int main(int argc, char* argv[])
   // To start, we'll create an pointer that references the current robot's state.
   // RobotState is the object that contains all the current position/velocity/acceleration data.
   moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
+  // std::vector<double> joint_group_positions;
   //
   //Vector to scale 3D file units
   Eigen::Vector3d vectorScale(0.001, 0.001, 0.001);
@@ -116,7 +122,7 @@ int main(int argc, char* argv[])
   collision_object.id = "box1";
   GoForm.id = "GoForm";
 
-  shapes::Mesh* m = shapes::createMeshFromResource("package://gp25workcell/GxSmall.stl", vectorScale);//,);
+  shapes::Mesh* m = shapes::createMeshFromResource("package://gp25workcell/GxSmall.stl", vectorScale);
 
   shape_msgs::Mesh mesh;
   shapes::ShapeMsg mesh_msg;
@@ -157,18 +163,15 @@ int main(int argc, char* argv[])
   collision_object.primitive_poses.push_back(box_pose);
   collision_object.operation = collision_object.ADD;
 
-  // std::vector<moveit_msgs::CollisionObject> collision_objects;
-  // collision_objects.push_back(collision_object);
+  std::vector<moveit_msgs::CollisionObject> collision_objects;
+  collision_objects.push_back(collision_object);
   // collision_objects.push_back(GoForm);
 
   // // Now, let's add the collision object into the world
   // ROS_INFO_NAMED("tutorial", "Add an object into the world");
-  // planning_scene_interface.addCollisionObjects(collision_objects);
+  planning_scene_interface.addCollisionObjects(collision_objects);
 
-  //Hard coded position values
-  geometry_msgs::Pose target_pose_M1;
-  geometry_msgs::Pose target_pose_M2;
-  geometry_msgs::Pose target_pose_M3;
+
 
   //Joint positions for M1. Radians
   target_pose_M1.orientation.w = 0.0;
@@ -180,12 +183,12 @@ int main(int argc, char* argv[])
   target_pose_M1.position.z = 1.6;
 
   //Joint positions for M2. Radians
-  target_pose_M2.orientation.w = 1.0;
+  target_pose_M2.orientation.w = 0.0;
   target_pose_M2.orientation.x = 1.0;
   target_pose_M2.orientation.y = 1.0;
   target_pose_M2.orientation.z = 1.0;
   target_pose_M2.position.x = 1.0;
-  target_pose_M2.position.y = 0.3;
+  target_pose_M2.position.y = -1.0;
   target_pose_M2.position.z = 1.1;
 
   //Joint positions for M3. Radians
@@ -228,55 +231,40 @@ int main(int argc, char* argv[])
       }
       Mcount--;
     }
-
-    if(Ccount >= 1)    //Configure
+    if(Rcount >= 1)
+    {
+      if(Rmessage[0] = 'R')   //Report
       {
-        switch(Cmessage[1])
+        // const char *reportPtr;
+        // const std::vector<double> * const reportPtr = &joint_group_positions;
+        // reportPtr = (const char *)RobotoPCData;
+        switch(Rmessage[1])
         {
           case '1':
-            //configure point 1
-            ROS_INFO("move_node: Config point 1");
-            target_pose_M1.orientation.w = 0.5;
-            target_pose_M1.orientation.x = 1.0;
-            target_pose_M1.orientation.y = 1.0;
-            target_pose_M1.orientation.z = 1.0;
-            target_pose_M1.position.x = 1.0;
-            target_pose_M1.position.y = 0.3;
-            target_pose_M1.position.z = 1.5;
+            //R1: Report joint position
+            ROS_INFO("move_node: Report R1 Position");
+            // current_state = move_group.getCurrentState();
+            // current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
+            //send msg over ReportMsg
+            // ROS_INFO("move_node: Current joint position g: %g", joint_group_positions);
             break;
           case '2':
-            //configure point 2
+            //R2: Report something
+            ROS_INFO("move_node: Report R2 Something");
             break;
-          case '3':
-            //configure point 3
+          default:
+            ROS_INFO("move_node: Report Unknown");
             break;
         }
-      Ccount--;
+        Rcount--;
       }
+    }
     ros::spinOnce();
   }
-
-
-
-  // // Next get the current set of joint values for the group.
-  // std::vector<double> joint_group_positions;
-  // current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
-
-  // // Now, let's modify one of the joints, plan to the new joint space goal and visualize the plan.
-  // joint_group_positions[0] = -1.0;  // radians
-  // move_group.setJointValueTarget(joint_group_positions);
-  // move_group.setMaxVelocityScalingFactor(0.1);
-
-  // bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-  // ROS_INFO_NAMED("tutorial", "Visualizing plan 2 (joint space goal) %s", success ? "" : "FAILED");
-
-  // move_group.move();
-
-  
-
-
-  // END_TUTORIAL
 
   ros::shutdown();
   return 0;
 }
+
+
+  

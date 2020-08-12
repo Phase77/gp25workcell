@@ -1,18 +1,46 @@
 /**
  * Simple ROS Node
  **/
-#include <ros/ros.h>
-#include "std_msgs/String.h"
-#include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <fcntl.h>
+#include "headers.h"
+#include <sensor_msgs/JointState.h>
+
 
 #define BUFFSIZE 1500
+
+sensor_msgs::JointState jointStateToPc;
+
+void send_all(int sock, const void *vbuf, size_t size_buf)
+{
+    const double *buf = (double*)vbuf;
+    int send_size;
+    size_t size_left;
+    const int flags = 0;
+
+    size_left = size_buf;
+
+    while(size_left > 0)
+    {
+        if((send_size = send(sock, buf, size_left, flags)) == -1)
+        {
+            ROS_INFO("send error");
+            exit(1);
+        }
+        if(send_size == 0)
+        {
+            ROS_INFO("All bytes sent!");
+        }
+
+        size_left -= send_size;
+        buf += send_size;
+    }
+    return;
+}
+
+void JointStateCallback(sensor_msgs::JointState msg)
+{
+    jointStateToPc = msg;
+}
+
 
 void Die(char *mess) { perror(mess); exit(1);}
 
@@ -25,6 +53,9 @@ int main(int argc, char* argv[])
     ros::NodeHandle nh;
 
     ROS_INFO("Hello World TCP!!");
+
+    //Subscribe to joint states
+    ros::Subscriber jointSub = nh.subscribe("joint_states", 1000, JointStateCallback);
 
     ros::Publisher TcpMsg_pub = nh.advertise<std_msgs::String>("MasterMsg", 1000);
     int count = 0;
@@ -57,8 +88,11 @@ int main(int argc, char* argv[])
 
     //Add recieve timeout
     fcntl(sock, F_SETFL, O_NONBLOCK);
+    
+    std::vector<double> pos;
+    pos = jointStateToPc.position;
 
-    //Recieve data onver TCP then forward data to TcpProcess_node
+    //Recieve data over TCP then forward data to TcpProcess_node
     // on MasterMsg topic
     while(ros::ok())
     {
@@ -72,15 +106,19 @@ int main(int argc, char* argv[])
 
             //create message object to put data in and forward on MasterMsg topic
             std_msgs::String msg;
-
-            // std::stringstream ss;
-            // ss<< "Hello Topic " << count;
             msg.data = buffer;//ss.str();
 
             TcpMsg_pub.publish(msg);
 
-            ROS_INFO("%s", msg.data.c_str());
+            send_all(sock, (void *)jointStateToPc.position.data(), sizeof(double) * jointStateToPc.position.size());
         }
+        
+        // if(SendMsgCnt)
+        // {
+        //     ROS_INFO("tcp_node: Send Report");
+        //     // send(sock, RobotoPCData, RobotoPCLen, 0);
+        //     SendMsgCnt--;
+        // }
 
         ros::spinOnce();
     }
