@@ -1,7 +1,8 @@
 /**
  * Simple ROS Node
  **/
-#include "headers.h"
+// #include "headers.h"
+#include "gp25workcell/CmdParser.h"
 
 
 int count = 0;
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
     // ros::Subscriber jointSub = nh_TcpProcess.subscribe("joint_states", 1000, JointStateCallback);
     
     //Message to publish M commands on
-    ros::Publisher MCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("MCommandMsg", 1000);
+    // ros::Publisher MCommandMsg_pub = nh_TcpProcess.advertise<std_msgs::String>("MCommandMsg", 1000);
     
     //create message object to put data in and forward on MCommand topic
     std_msgs::String MCommandmsg;
@@ -64,26 +65,26 @@ int main(int argc, char* argv[])
             {
                 case 'M':
                     ROS_INFO("TcpProcess_node: I got a move command");
-                    switch(message[1])
-                    {
-                        case '1':
-                            ROS_INFO("TcpProcess_node: Move to M1");
-                            MCommandmsg.data = "M1";
-                            break;
-                        case '2':
-                            ROS_INFO("TcpProcess_node: Move to M2");
-                            MCommandmsg.data = "M2";
-                            break;
-                        case '3':
-                            ROS_INFO("TcpProcess_node: Move to M3");
-                            MCommandmsg.data = "M3";
-                            break;
-                        default:
-                            ROS_INFO("TcpProcess_node: Unknown move command");
-                            MCommandmsg.data = "Unknown Move Command";
-                            break;
-                    }
-                    MCommandMsg_pub.publish(MCommandmsg);                    
+                    // switch(message[1])
+                    // {
+                    //     case '1':
+                    //         ROS_INFO("TcpProcess_node: Move to M1");
+                    //         MCommandmsg.data = "M1";
+                    //         break;
+                    //     case '2':
+                    //         ROS_INFO("TcpProcess_node: Move to M2");
+                    //         MCommandmsg.data = "M2";
+                    //         break;
+                    //     case '3':
+                    //         ROS_INFO("TcpProcess_node: Move to M3");
+                    //         MCommandmsg.data = "M3";
+                    //         break;
+                    //     default:
+                    //         ROS_INFO("TcpProcess_node: Unknown move command");
+                    //         MCommandmsg.data = "Unknown Move Command";
+                    //         break;
+                    // }
+                    // MCommandMsg_pub.publish(MCommandmsg);                    
                     break;
                 case 'R':
                     ROS_INFO("TcpProcess_node: I got a Report Command");

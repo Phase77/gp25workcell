@@ -1,13 +1,26 @@
 /**
  * Simple ROS Node
  **/
-#include "headers.h"
+// #include "headers.h"
+#include "gp25workcell/CmdParser.h"
 #include <sensor_msgs/JointState.h>
+#include "gp25workcell/MCommand.h"
 
 
 #define BUFFSIZE 1500
 
+/**
+ * ***************FUNCTIONS********************************
+ */
+void process_parsed_command();
+
 sensor_msgs::JointState jointStateToPc;
+    //Message to publish M commands on
+    ros::Publisher MCommandMsg_pub;
+    //create message object to put data in and forward on MCommand topic
+    gp25workcell::MCommand MCommandmsg;
+    
+
 
 void send_all(int sock, const void *vbuf, size_t size_buf)
 {
@@ -50,15 +63,22 @@ int main(int argc, char* argv[])
     ros::init(argc, argv, "tcp_node");
 
     // Create a ROS node handle
-    ros::NodeHandle nh;
+    ros::NodeHandle nh_TcpNode;
+    //Message to publish M commands on
+    MCommandMsg_pub = nh_TcpNode.advertise<gp25workcell::MCommand>("MCommandMsg", 1000);
+
+
+
 
     ROS_INFO("Hello World TCP!!");
 
     //Subscribe to joint states
-    ros::Subscriber jointSub = nh.subscribe("joint_states", 1000, JointStateCallback);
+    ros::Subscriber jointSub = nh_TcpNode.subscribe("joint_states", 1000, JointStateCallback);
 
-    ros::Publisher TcpMsg_pub = nh.advertise<std_msgs::String>("MasterMsg", 1000);
+    ros::Publisher TcpMsg_pub = nh_TcpNode.advertise<std_msgs::String>("MasterMsg", 1000);
     int count = 0;
+
+
 
     //Create socket
     int sock;
@@ -108,17 +128,16 @@ int main(int argc, char* argv[])
             std_msgs::String msg;
             msg.data = buffer;//ss.str();
 
-            TcpMsg_pub.publish(msg);
+            // TcpMsg_pub.publish(msg);
 
             send_all(sock, (void *)jointStateToPc.position.data(), sizeof(double) * jointStateToPc.position.size());
+
+            ROS_INFO("begin parse");
+            TCPparser.parse(buffer);
+            ROS_INFO("Parser Letter: %c", TCPparser.command_letter);
+            ROS_INFO("Parser Codenum: %i", TCPparser.codenum);
+            process_parsed_command();
         }
-        
-        // if(SendMsgCnt)
-        // {
-        //     ROS_INFO("tcp_node: Send Report");
-        //     // send(sock, RobotoPCData, RobotoPCLen, 0);
-        //     SendMsgCnt--;
-        // }
 
         ros::spinOnce();
     }
@@ -129,4 +148,18 @@ int main(int argc, char* argv[])
 
     //Dont exit the program
     ros::spin();
+}
+
+void process_parsed_command()
+{
+    switch(TCPparser.command_letter)
+    {
+        case 'm':
+        case 'M':
+            ROS_INFO("Process_parsed_command: Sending message");
+            MCommandmsg.commandNum = TCPparser.codenum;
+            MCommandMsg_pub.publish(MCommandmsg);                    
+            break;
+
+    }
 }

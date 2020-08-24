@@ -66,12 +66,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+# Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  MCommand.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -90,6 +89,7 @@ add_service_files(
 generate_messages(
    DEPENDENCIES
    geometry_msgs
+   std_msgs
 )
 
 ################################################
@@ -122,7 +122,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
   LIBRARIES 
     interactivity_utils
   CATKIN_DEPENDS
@@ -143,15 +143,15 @@ catkin_package(
 ###########
 
 include_directories(SYSTEM ${THIS_PACKAGE_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIRS})
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
+# include_directories(
+#   include
+#   ${catkin_INCLUDE_DIRS}
+# )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -167,8 +167,10 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(move_node src/move_node.cpp)
- add_executable(tcp_node src/tcp_node.cpp)
+ add_executable(tcp_node src/tcp_node.cpp src/Cmdparser.cpp)
  add_executable(TcpProcess_node src/TcpProcess_node.cpp)
+#  add_executable(CmdParser src/Cmdparser.cpp)
+#  add_executable(parser src/parser.cpp)
  #add_executable(config_node src/config_node.cpp)
 
 ## Rename C++ executable without prefix
@@ -185,6 +187,8 @@ include_directories(
  target_link_libraries(move_node ${catkin_LIBRARIES})
  target_link_libraries(tcp_node ${catkin_LIBRARIES})
  target_link_libraries(TcpProcess_node ${catkin_LIBRARIES})
+#  target_link_libraries(CmdParser ${catkin_LIBRARIES})
+#  target_link_libraries(parser ${catkin_LIBRARIES})
  #target_link_libraries(config_node ${catkin_LIBRARIES})
 
 #############
@@ -209,18 +213,18 @@ include_directories(
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
+# install(TARGETS ${PROJECT_NAME}_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 # )
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  # FILES_MATCHING PATTERN "*.h"
+  # PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

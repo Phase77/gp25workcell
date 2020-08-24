@@ -7,6 +7,7 @@
             },
             "includePath": [
                 "/home/jake/catkin_ws/devel/include/**",
+                "/home/jake/catkin_ws/devel/include/gp25workcell**",
                 "/opt/ros/kinetic/include/**",
                 "/home/jake/catkin_ws/src/gp25workcell/include/**",
                 "/home/jake/catkin_ws/src/industrial_core/industrial_robot_client/include/**",
@@ -14,7 +15,8 @@
                 "/home/jake/catkin_ws/src/industrial_core/industrial_utils/include/**",
                 "/home/jake/catkin_ws/src/motoman/motoman_driver/include/**",
                 "/home/jake/catkin_ws/src/industrial_core/simple_message/include/**",
-                "/usr/include/**"
+                "/usr/include/**",
+                "${workspaceFolder}"
             ],
             "name": "ROS",
             "intelliSenseMode": "gcc-x64",

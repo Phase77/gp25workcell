@@ -1,7 +1,8 @@
 /**
 **  Simple ROS Node
 **/
-#include "headers.h"
+// #include "headers.h"
+#include "gp25workcell/CmdParser.h"
 
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/move_group_interface/move_group.h>
@@ -17,6 +18,9 @@
 #include "geometric_shapes/shape_operations.h"
 #include <geometric_shapes/shape_operations.h>
 
+#include "gp25workcell/MCommand.h"
+
+
 using namespace std;
 
   //position values
@@ -26,15 +30,15 @@ using namespace std;
 
 int Mcount = 0;
 int Rcount = 0;
-char Mmessage[20];
+gp25workcell::MCommand Mmessage;
 char Rmessage[20];
 std::string PLANNING_GROUP = "manipulator";
 
-void MCommandMsgCallback(const std_msgs::String::ConstPtr& MCommandmsg)
+void MCommandMsgCallback(const gp25workcell::MCommand& MCommandmsg)
 {
-    MCommandmsg->data.copy(Mmessage,10,0);
+    Mmessage = MCommandmsg;
     Mcount++;
-    ROS_INFO("move_node: I heard: %s", MCommandmsg->data.c_str());
+    ROS_INFO("move_node: I heard: %i", MCommandmsg);
 }
 
 void RCommandMsgCallback(const std_msgs::String::ConstPtr& RCommandmsg)
@@ -204,21 +208,19 @@ int main(int argc, char* argv[])
   {
     if(Mcount >= 1)
     {
-      if(Mmessage[0] = 'M')    //Move
-      {
-        switch(Mmessage[1])
+      switch(Mmessage.commandNum)
         {
-          case '1':
+          case 1:
             //if recieved M1
             ROS_INFO("move_node: Move to M1");
             move_group.setPoseTarget(target_pose_M1);
             break;
-          case '2':
+          case 2:
             //if recieved M2
             ROS_INFO("move_node: Move to M2");
             move_group.setPoseTarget(target_pose_M2);
             break; 
-          case '3':
+          case 3:
             //if recieved M3
             ROS_INFO("move_node: Move to M3");
             move_group.setPoseTarget(target_pose_M3);
@@ -227,8 +229,7 @@ int main(int argc, char* argv[])
         move_group.setMaxVelocityScalingFactor(0.1);
         moveit::planning_interface::MoveGroupInterface::Plan my_plan;
         bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);    
-        move_group.move();
-      }
+        move_group.move();     
       Mcount--;
     }
     if(Rcount >= 1)
