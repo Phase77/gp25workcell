@@ -23,6 +23,7 @@
 #define NUMERIC(a) WITHIN (a, '0', '9')
 #define DECIMAL(a) (NUMERIC(a) || a == '.')
 
+// Class used for parsing command recieved over TCP.
 class CommandParser{
     private:
         static char *value_ptr;

@@ -2,33 +2,29 @@
 **  Simple ROS Node
 **/
 #include "gp25workcell/headers.h"
-#include "gp25workcell/TargetPose.h"
 
-
+//Global Variables
 geometry_msgs::Pose target_pose[20];
 int Mcount = 0;
 gp25workcell::MCommand Mmessage;
 std::string PLANNING_GROUP = "manipulator";
+moveit::planning_interface::MoveGroupInterface::Plan my_plan;
 
+// M Command callback message.
+// This gets called whenever tcp_node recieves and M (move) command
+// and publishes it on the "MCommandMsg" topic.
 void MCommandMsgCallback(const gp25workcell::MCommand& MCommandmsg)
 {
     Mmessage = MCommandmsg;
     Mcount++;
 }
 
+// Service function for "Target_Pose" service
+// This service function is called when tcp_node revieves 
+// a C (configure) command. 
 bool SetTargetPose(gp25workcell::TargetPose::Request &req,
                    gp25workcell::TargetPose::Response &res)
 {
-  ROS_INFO("move_node: SetTargetPose: Setting pose");
-
-  ROS_INFO("move_node: SetTargetPose X: %d", req.posX);
-  ROS_INFO("move_node: SetTargetPose Y: %d", req.posY);
-  ROS_INFO("move_node: SetTargetPose Z: %d", req.posZ);
-  ROS_INFO("move_node: SetTargetPose w: %d", req.orientW);
-  ROS_INFO("move_node: SetTargetPose x: %d", req.orientX);
-  ROS_INFO("move_node: SetTargetPose y: %d", req.orientY);
-  ROS_INFO("move_node: SetTargetPose z: %d", req.orientZ);
-  
   target_pose[req.poseNum].position.x = req.posX;
   target_pose[req.poseNum].position.y = req.posY;
   target_pose[req.poseNum].position.z = req.posZ;
@@ -51,11 +47,12 @@ int main(int argc, char* argv[])
   // Create a ROS node handle
   ros::NodeHandle nh_moveNode; 
  
-   // subscribe to MasterMsg topic
+  // subscribe to MasterMsg topic
   ros::Subscriber sub = node_handle.subscribe("MCommandMsg", 1000, MCommandMsgCallback);
+  
+  // Create and advertise "Target_Pose" service on ROS
   ros::ServiceServer service = node_handle.advertiseService("Target_Pose", SetTargetPose);
  
-
   // The :move_group_interface:`MoveGroup` class can be easily
   // setup using just the name of the planning group you would like to control and plan for.
   moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
@@ -67,52 +64,21 @@ int main(int argc, char* argv[])
   // Raw pointers are frequently used to refer to the planning group for improved performance.
   const robot_state::JointModelGroup* joint_model_group =
   move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
-
       
-      
-  
-  // Getting Basic Information
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^
-  //
-  // We can print the name of the reference frame for this robot.
-  ROS_INFO_NAMED("tutorial", "Reference frame: %s", move_group.getPlanningFrame().c_str());
-
-  // We can also print the name of the end-effector link for this group.
-  ROS_INFO_NAMED("tutorial", "End effector link: %s", move_group.getEndEffectorLink().c_str());
-
-  // Start the demo
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^
-  // Planning to a joint-space goal
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  //
-  // Let's set a joint space goal and move towards it.  This will replace the
-  // pose target we set above.
-
-  // Now, we call the planner to compute the plan and visualize it.
-  // Note that we are just planning, not asking move_group
-  // to actually move the robot.
-  
-  moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-  //
-  // To start, we'll create an pointer that references the current robot's state.
-  // RobotState is the object that contains all the current position/velocity/acceleration data.
-  moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
-
   //Vector to scale 3D file units
   Eigen::Vector3d vectorScale(0.001, 0.001, 0.001);
 
   // Define collision objects ROS message.
   moveit_msgs::CollisionObject collision_object;
   moveit_msgs::CollisionObject GoForm;
-
   collision_object.header.frame_id = move_group.getPlanningFrame();
 
   // The id of the object is used to identify it.
   collision_object.id = "box1";
   GoForm.id = "GoForm";
 
+  // Create mesh from stl file
   shapes::Mesh* m = shapes::createMeshFromResource("package://gp25workcell/GxSmall.stl", vectorScale);
-
   shape_msgs::Mesh mesh;
   shapes::ShapeMsg mesh_msg;
   shapes::constructMsgFromShape(m, mesh_msg);
@@ -161,8 +127,8 @@ int main(int argc, char* argv[])
   planning_scene_interface.addCollisionObjects(collision_objects);
 
 
-
-  //Joint positions for M1. Radians
+  // Define som initial poses
+  //Pose for M1. Radians
   target_pose[1].position.x = 1.0;
   target_pose[1].position.y = 0.3;
   target_pose[1].position.z = 1.6;
@@ -171,7 +137,7 @@ int main(int argc, char* argv[])
   target_pose[1].orientation.y = 1.0;
   target_pose[1].orientation.z = 1.0;
 
-  //Joint positions for M2. Radians
+  //Pose for M2. Radians
   target_pose[2].position.x = 1.0;
   target_pose[2].position.y = -1.0;
   target_pose[2].position.z = 1.1;
@@ -180,7 +146,7 @@ int main(int argc, char* argv[])
   target_pose[2].orientation.y = 1.0;
   target_pose[2].orientation.z = 1.0;
 
-  //Joint positions for M3. Radians
+  //Pose for M3. Radians
   target_pose[3].position.x = 1.0;
   target_pose[3].position.y = 0.3;
   target_pose[3].position.z = 1.5;
@@ -192,29 +158,13 @@ int main(int argc, char* argv[])
 
   while(ros::ok())
   {
-    if(Mcount >= 1)
-    { 
-      switch(Mmessage.commandNum)
-      {
-        case 1:
-          //if recieved M1
-          ROS_INFO("move_node: Move to M1");
-          move_group.setPoseTarget(target_pose[1]);
-          break;
-        case 2:
-          //if recieved M2
-          ROS_INFO("move_node: Move to M2");
-          move_group.setPoseTarget(target_pose[2]);
-          break; 
-        case 3:
-          //if recieved M3
-          ROS_INFO("move_node: Move to M3");
-          move_group.setPoseTarget(target_pose[3]);
-          break; 
-      }    
+    if(Mcount >= 1)     // M command recieved
+    {
+      // set pose target to desired pose number
       move_group.setPoseTarget(target_pose[Mmessage.commandNum]);
       move_group.setMaxVelocityScalingFactor(0.1);
-      moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+
+      // Plan move to target pose
       bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);    
       move_group.move();     
       Mcount--;

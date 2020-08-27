@@ -3,24 +3,24 @@
  **/
 #include "gp25workcell/headers.h"
 #include <sensor_msgs/JointState.h>
-#include "gp25workcell/TargetPose.h"
 
 
 #define BUFFSIZE 1500
+
+/**
+ * ***************GLOBAL VARIABLES*************************
+ */
+sensor_msgs::JointState jointStateToPc;
+ros::Publisher MCommandMsg_pub;             //Message to publish M commands on
+gp25workcell::MCommand MCommandmsg;         //create message object to put data in and forward on MCommand topic
+ros::ServiceClient client;
 
 /**
  * ***************FUNCTIONS********************************
  */
 void process_parsed_command();
 
-sensor_msgs::JointState jointStateToPc;
-    //Message to publish M commands on
-    ros::Publisher MCommandMsg_pub;
-    //create message object to put data in and forward on MCommand topic
-    gp25workcell::MCommand MCommandmsg;
-    ros::ServiceClient client;
-
-
+// Sends all data in vbuf over TCP
 void send_all(int sock, const void *vbuf, size_t size_buf)
 {
     const double *buf = (double*)vbuf;
@@ -48,12 +48,14 @@ void send_all(int sock, const void *vbuf, size_t size_buf)
     return;
 }
 
+// Callback function that listens on the "joint_state" topic
+// Store the current joint state
 void JointStateCallback(sensor_msgs::JointState msg)
 {
     jointStateToPc = msg;
 }
 
-
+// Error message function
 void Die(char *mess) { perror(mess); exit(1);}
 
 int main(int argc, char* argv[])
@@ -66,6 +68,8 @@ int main(int argc, char* argv[])
     
     //Message to publish M commands on
     MCommandMsg_pub = nh_TcpNode.advertise<gp25workcell::MCommand>("MCommandMsg", 1000);
+
+    // Create client for "Target_Pose" service
     client = nh_TcpNode.serviceClient<gp25workcell::TargetPose>("Target_Pose");
     
     ROS_INFO("Hello World TCP!!");
@@ -102,8 +106,8 @@ int main(int argc, char* argv[])
     //Add recieve timeout
     fcntl(sock, F_SETFL, O_NONBLOCK);
     
-    std::vector<double> pos;
-    pos = jointStateToPc.position;
+    // std::vector<double> pos;
+    // pos = jointStateToPc.position;
 
     //Recieve data over TCP then forward data to TcpProcess_node
     // on MasterMsg topic
@@ -119,16 +123,14 @@ int main(int argc, char* argv[])
 
             //create message object to put data in and forward on MasterMsg topic
             std_msgs::String msg;
-            msg.data = buffer;//ss.str();
-
-            // TcpMsg_pub.publish(msg);
+            msg.data = buffer;
 
             send_all(sock, (void *)jointStateToPc.position.data(), sizeof(double) * jointStateToPc.position.size());
 
-            ROS_INFO("begin parse");
+            // Parse revieved command
             TCPparser.parse(buffer);
-            ROS_INFO("Parser Letter: %c", TCPparser.command_letter);
-            ROS_INFO("Parser Codenum: %i", TCPparser.codenum);
+
+            // Process parsed command
             process_parsed_command();
         }
 
@@ -143,17 +145,22 @@ int main(int argc, char* argv[])
     ros::spin();
 }
 
+// Function used to process parsed command and act accordingly
 void process_parsed_command()
 {
     switch(TCPparser.command_letter)
     {
-        case 'm':
+        case 'm':                                                   // M command move to preset point
         case 'M':
+            // Publish desired move point for move_node to
+            // recieve and plan move
             MCommandmsg.commandNum = TCPparser.codenum;
             MCommandMsg_pub.publish(MCommandmsg);                    
             break;
-        case 'c':
+        case 'c':                                                   // C command configure target pose                 
         case 'C':
+            // Load service request with data from parser
+            // and call the service
             gp25workcell::TargetPose srv;
             srv.request.poseNum = TCPparser.codenum;
             srv.request.posX = TCPparser.param[0];

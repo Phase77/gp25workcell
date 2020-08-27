@@ -59,10 +59,11 @@ void CommandParser::parse(char *p)
     param[cnt] = 0;
     float test;
     bool negParam = false;
-    //store the next values as parameters untill *p = null
+
+    //store the next values as parameters untill *p = ~
     while(*p != '~')
     {
-        //skip spaces and inc cnt and reset for next param
+        //skip spaces, inc cnt and reset for next param
         if(*p == ' ')
         {
             if(negParam == true)
@@ -78,6 +79,7 @@ void CommandParser::parse(char *p)
             while(*p == ' ') ++p;
         }        
 
+        // If param is negative set negParam
         if(*p == '-')
         {
             negParam = true;
@@ -87,17 +89,20 @@ void CommandParser::parse(char *p)
         {
             decSeen = true;
             *p++;
-        }            
+        }
+        // Read digits left of decimal one at a time            
         if(!decSeen)
         {
             param[cnt] *= 10, param[cnt] += *p - '0';
         }
+        // Read digits right of decimal one at a time
         else if(decSeen)
         {
             param[cnt] = param[cnt] + (double(*p - '0') / (double) i);
             i = i * 10;
         }
 
+        // Move pointer to next value
         ++p;
     }
 

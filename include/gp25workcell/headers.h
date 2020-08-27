@@ -33,5 +33,6 @@
 
 #include "gp25workcell/CmdParser.h"
 #include "gp25workcell/MCommand.h"
+#include "gp25workcell/TargetPose.h"
 
 #endif

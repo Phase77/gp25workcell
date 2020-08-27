@@ -169,10 +169,6 @@ link_directories(${catkin_LIBRARY_DIRS})
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(move_node src/move_node.cpp)
  add_executable(tcp_node src/tcp_node.cpp src/Cmdparser.cpp)
-#  add_executable(TcpProcess_node src/TcpProcess_node.cpp)
-#  add_executable(CmdParser src/Cmdparser.cpp)
-#  add_executable(parser src/parser.cpp)
- #add_executable(config_node src/config_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -187,10 +183,6 @@ link_directories(${catkin_LIBRARY_DIRS})
 ## Specify libraries to link a library or executable target against
  target_link_libraries(move_node ${catkin_LIBRARIES})
  target_link_libraries(tcp_node ${catkin_LIBRARIES})
-#  target_link_libraries(TcpProcess_node ${catkin_LIBRARIES})
-#  target_link_libraries(CmdParser ${catkin_LIBRARIES})
-#  target_link_libraries(parser ${catkin_LIBRARIES})
- #target_link_libraries(config_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
