@@ -11,7 +11,6 @@
   <include file="$(find motoman_gp25_moveit_config)/launch/demo.launch"/>
 
   <node name="tcp_node" pkg="gp25workcell" type="tcp_node" output="screen" args="192.168.0.100 test 5000" />
-  <node name="TcpProcess_node" pkg="gp25workcell" type="TcpProcess_node" output="screen" />
   <node name="move_node" pkg="gp25workcell" type="move_node" respawn="false" output="screen">
   </node>
 

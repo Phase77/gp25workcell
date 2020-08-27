@@ -1,21 +1,23 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <ros/ros.h>
+#include "gp25workcell/headers.h"
 
-#include "std_msgs/String.h"
+// #include <ros/ros.h>
 
-#include <iostream>
-#include "string"
-#include <bits/stdc++.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
+// #include "std_msgs/String.h"
 
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
+// #include <iostream>
+// #include "string"
+// #include <bits/stdc++.h>
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <unistd.h>
+// #include <fcntl.h>
+
+// #include <sys/socket.h>
+// #include <arpa/inet.h>
+// #include <netinet/in.h>
 
 #define WITHIN(V,L,H) ((V) >= (L) && V <= (H))
 #define NUMERIC(a) WITHIN (a, '0', '9')
@@ -30,6 +32,7 @@ class CommandParser{
         static char *command_ptr, *string_arg;
         static char command_letter;
         static int codenum;
+        static double param[30];
 };
 
 extern CommandParser TCPparser;

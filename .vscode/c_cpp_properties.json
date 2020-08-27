@@ -8,6 +8,7 @@
             "includePath": [
                 "/home/jake/catkin_ws/devel/include/**",
                 "/home/jake/catkin_ws/devel/include/gp25workcell**",
+                "/home/jake/catkin_ws/devel/include/gp25workcell/srv**",
                 "/opt/ros/kinetic/include/**",
                 "/home/jake/catkin_ws/src/gp25workcell/include/**",
                 "/home/jake/catkin_ws/src/industrial_core/industrial_robot_client/include/**",

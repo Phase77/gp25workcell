@@ -1,10 +1,9 @@
 /**
  * Simple ROS Node
  **/
-// #include "headers.h"
-#include "gp25workcell/CmdParser.h"
+#include "gp25workcell/headers.h"
 #include <sensor_msgs/JointState.h>
-#include "gp25workcell/MCommand.h"
+#include "gp25workcell/TargetPose.h"
 
 
 #define BUFFSIZE 1500
@@ -19,7 +18,7 @@ sensor_msgs::JointState jointStateToPc;
     ros::Publisher MCommandMsg_pub;
     //create message object to put data in and forward on MCommand topic
     gp25workcell::MCommand MCommandmsg;
-    
+    ros::ServiceClient client;
 
 
 void send_all(int sock, const void *vbuf, size_t size_buf)
@@ -64,22 +63,16 @@ int main(int argc, char* argv[])
 
     // Create a ROS node handle
     ros::NodeHandle nh_TcpNode;
+    
     //Message to publish M commands on
     MCommandMsg_pub = nh_TcpNode.advertise<gp25workcell::MCommand>("MCommandMsg", 1000);
-
-
-
-
+    client = nh_TcpNode.serviceClient<gp25workcell::TargetPose>("Target_Pose");
+    
     ROS_INFO("Hello World TCP!!");
 
     //Subscribe to joint states
     ros::Subscriber jointSub = nh_TcpNode.subscribe("joint_states", 1000, JointStateCallback);
-
-    ros::Publisher TcpMsg_pub = nh_TcpNode.advertise<std_msgs::String>("MasterMsg", 1000);
-    int count = 0;
-
-
-
+   
     //Create socket
     int sock;
     struct sockaddr_in echoserver;
@@ -156,9 +149,29 @@ void process_parsed_command()
     {
         case 'm':
         case 'M':
-            ROS_INFO("Process_parsed_command: Sending message");
             MCommandmsg.commandNum = TCPparser.codenum;
             MCommandMsg_pub.publish(MCommandmsg);                    
+            break;
+        case 'c':
+        case 'C':
+            gp25workcell::TargetPose srv;
+            srv.request.poseNum = TCPparser.codenum;
+            srv.request.posX = TCPparser.param[0];
+            srv.request.posY = TCPparser.param[1];
+            srv.request.posZ = TCPparser.param[2];
+            srv.request.orientW = TCPparser.param[3];
+            srv.request.orientX = TCPparser.param[4];
+            srv.request.orientY = TCPparser.param[5];
+            srv.request.orientZ = TCPparser.param[6];
+
+            if(client.call(srv))
+            {
+                ROS_INFO("The Response was true");
+            }            
+            else
+            {
+                ROS_INFO("The Response was false");
+            }
             break;
 
     }

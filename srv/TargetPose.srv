@@ -1,0 +1,12 @@
+#request
+int8 poseNum
+float32 posX
+float32 posY
+float32 posZ
+float32 orientW
+float32 orientX
+float32 orientY
+float32 orientZ
+---
+#response
+int8 res

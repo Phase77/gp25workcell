@@ -1,51 +1,42 @@
 /**
 **  Simple ROS Node
 **/
-// #include "headers.h"
-#include "gp25workcell/CmdParser.h"
-
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/move_group_interface/move_group.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <moveit_msgs/DisplayRobotState.h>
-#include <moveit_msgs/DisplayTrajectory.h>
-#include <moveit_msgs/AttachedCollisionObject.h>
-#include <moveit_msgs/CollisionObject.h>
-#include <moveit_visual_tools/moveit_visual_tools.h>
-
-#include "geometric_shapes/shapes.h"
-#include "geometric_shapes/mesh_operations.h"
-#include "geometric_shapes/shape_operations.h"
-#include <geometric_shapes/shape_operations.h>
-
-#include "gp25workcell/MCommand.h"
+#include "gp25workcell/headers.h"
+#include "gp25workcell/TargetPose.h"
 
 
-using namespace std;
-
-  //position values
-  geometry_msgs::Pose target_pose_M1;
-  geometry_msgs::Pose target_pose_M2;
-  geometry_msgs::Pose target_pose_M3;
-
+geometry_msgs::Pose target_pose[20];
 int Mcount = 0;
-int Rcount = 0;
 gp25workcell::MCommand Mmessage;
-char Rmessage[20];
 std::string PLANNING_GROUP = "manipulator";
 
 void MCommandMsgCallback(const gp25workcell::MCommand& MCommandmsg)
 {
     Mmessage = MCommandmsg;
     Mcount++;
-    ROS_INFO("move_node: I heard: %i", MCommandmsg);
 }
 
-void RCommandMsgCallback(const std_msgs::String::ConstPtr& RCommandmsg)
+bool SetTargetPose(gp25workcell::TargetPose::Request &req,
+                   gp25workcell::TargetPose::Response &res)
 {
-    RCommandmsg->data.copy(Rmessage,10,0);
-    Rcount++;
-    ROS_INFO("move_node: I heard: %s", RCommandmsg->data.c_str());
+  ROS_INFO("move_node: SetTargetPose: Setting pose");
+
+  ROS_INFO("move_node: SetTargetPose X: %d", req.posX);
+  ROS_INFO("move_node: SetTargetPose Y: %d", req.posY);
+  ROS_INFO("move_node: SetTargetPose Z: %d", req.posZ);
+  ROS_INFO("move_node: SetTargetPose w: %d", req.orientW);
+  ROS_INFO("move_node: SetTargetPose x: %d", req.orientX);
+  ROS_INFO("move_node: SetTargetPose y: %d", req.orientY);
+  ROS_INFO("move_node: SetTargetPose z: %d", req.orientZ);
+  
+  target_pose[req.poseNum].position.x = req.posX;
+  target_pose[req.poseNum].position.y = req.posY;
+  target_pose[req.poseNum].position.z = req.posZ;
+  target_pose[req.poseNum].orientation.w = req.orientW; 
+  target_pose[req.poseNum].orientation.x = req.orientX; 
+  target_pose[req.poseNum].orientation.y = req.orientY; 
+  target_pose[req.poseNum].orientation.z = req.orientZ; 
+  return true;
 }
 
 int main(int argc, char* argv[])
@@ -58,16 +49,11 @@ int main(int argc, char* argv[])
   ROS_INFO("Hello, World!");
   
   // Create a ROS node handle
-  ros::NodeHandle nh_moveNode;
-  
-  // subscribe to MasterMsg topic
+  ros::NodeHandle nh_moveNode; 
+ 
+   // subscribe to MasterMsg topic
   ros::Subscriber sub = node_handle.subscribe("MCommandMsg", 1000, MCommandMsgCallback);
-  ros::Subscriber Rsub = node_handle.subscribe("RCommandMsg", 1000, RCommandMsgCallback);
- 
-  // MoveIt! operates on sets of joints called "planning groups" and stores them in an object called
-  // the `JointModelGroup`. Throughout MoveIt! the terms "planning group" and "joint model group"
-  // are used interchangably.
- 
+  ros::ServiceServer service = node_handle.advertiseService("Target_Pose", SetTargetPose);
  
 
   // The :move_group_interface:`MoveGroup` class can be easily
@@ -80,7 +66,7 @@ int main(int argc, char* argv[])
 
   // Raw pointers are frequently used to refer to the planning group for improved performance.
   const robot_state::JointModelGroup* joint_model_group =
-      move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
+  move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
 
       
       
@@ -111,8 +97,7 @@ int main(int argc, char* argv[])
   // To start, we'll create an pointer that references the current robot's state.
   // RobotState is the object that contains all the current position/velocity/acceleration data.
   moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
-  // std::vector<double> joint_group_positions;
-  //
+
   //Vector to scale 3D file units
   Eigen::Vector3d vectorScale(0.001, 0.001, 0.001);
 
@@ -178,88 +163,63 @@ int main(int argc, char* argv[])
 
 
   //Joint positions for M1. Radians
-  target_pose_M1.orientation.w = 0.0;
-  target_pose_M1.orientation.x = 1.0;
-  target_pose_M1.orientation.y = 1.0;
-  target_pose_M1.orientation.z = 1.0;
-  target_pose_M1.position.x = 1.0;
-  target_pose_M1.position.y = 0.3;
-  target_pose_M1.position.z = 1.6;
+  target_pose[1].position.x = 1.0;
+  target_pose[1].position.y = 0.3;
+  target_pose[1].position.z = 1.6;
+  target_pose[1].orientation.w = 0.0;
+  target_pose[1].orientation.x = 1.0;
+  target_pose[1].orientation.y = 1.0;
+  target_pose[1].orientation.z = 1.0;
 
   //Joint positions for M2. Radians
-  target_pose_M2.orientation.w = 0.0;
-  target_pose_M2.orientation.x = 1.0;
-  target_pose_M2.orientation.y = 1.0;
-  target_pose_M2.orientation.z = 1.0;
-  target_pose_M2.position.x = 1.0;
-  target_pose_M2.position.y = -1.0;
-  target_pose_M2.position.z = 1.1;
+  target_pose[2].position.x = 1.0;
+  target_pose[2].position.y = -1.0;
+  target_pose[2].position.z = 1.1;
+  target_pose[2].orientation.w = 0.0;
+  target_pose[2].orientation.x = 1.0;
+  target_pose[2].orientation.y = 1.0;
+  target_pose[2].orientation.z = 1.0;
 
   //Joint positions for M3. Radians
-  target_pose_M3.orientation.w = 0.5;
-  target_pose_M3.orientation.x = 1.0;
-  target_pose_M3.orientation.y = 1.0;
-  target_pose_M3.orientation.z = 1.0;
-  target_pose_M3.position.x = 1.0;
-  target_pose_M3.position.y = 0.3;
-  target_pose_M3.position.z = 1.5;
+  target_pose[3].position.x = 1.0;
+  target_pose[3].position.y = 0.3;
+  target_pose[3].position.z = 1.5;
+  target_pose[3].orientation.w = 0.5;
+  target_pose[3].orientation.x = 1.0;
+  target_pose[3].orientation.y = 1.0;
+  target_pose[3].orientation.z = 1.0;
+
 
   while(ros::ok())
   {
     if(Mcount >= 1)
-    {
+    { 
       switch(Mmessage.commandNum)
-        {
-          case 1:
-            //if recieved M1
-            ROS_INFO("move_node: Move to M1");
-            move_group.setPoseTarget(target_pose_M1);
-            break;
-          case 2:
-            //if recieved M2
-            ROS_INFO("move_node: Move to M2");
-            move_group.setPoseTarget(target_pose_M2);
-            break; 
-          case 3:
-            //if recieved M3
-            ROS_INFO("move_node: Move to M3");
-            move_group.setPoseTarget(target_pose_M3);
-            break; 
-        }
-        move_group.setMaxVelocityScalingFactor(0.1);
-        moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-        bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);    
-        move_group.move();     
+      {
+        case 1:
+          //if recieved M1
+          ROS_INFO("move_node: Move to M1");
+          move_group.setPoseTarget(target_pose[1]);
+          break;
+        case 2:
+          //if recieved M2
+          ROS_INFO("move_node: Move to M2");
+          move_group.setPoseTarget(target_pose[2]);
+          break; 
+        case 3:
+          //if recieved M3
+          ROS_INFO("move_node: Move to M3");
+          move_group.setPoseTarget(target_pose[3]);
+          break; 
+      }    
+      move_group.setPoseTarget(target_pose[Mmessage.commandNum]);
+      move_group.setMaxVelocityScalingFactor(0.1);
+      moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+      bool success = (move_group.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);    
+      move_group.move();     
       Mcount--;
     }
-    if(Rcount >= 1)
-    {
-      if(Rmessage[0] = 'R')   //Report
-      {
-        // const char *reportPtr;
-        // const std::vector<double> * const reportPtr = &joint_group_positions;
-        // reportPtr = (const char *)RobotoPCData;
-        switch(Rmessage[1])
-        {
-          case '1':
-            //R1: Report joint position
-            ROS_INFO("move_node: Report R1 Position");
-            // current_state = move_group.getCurrentState();
-            // current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
-            //send msg over ReportMsg
-            // ROS_INFO("move_node: Current joint position g: %g", joint_group_positions);
-            break;
-          case '2':
-            //R2: Report something
-            ROS_INFO("move_node: Report R2 Something");
-            break;
-          default:
-            ROS_INFO("move_node: Report Unknown");
-            break;
-        }
-        Rcount--;
-      }
-    }
+
     ros::spinOnce();
   }
 
